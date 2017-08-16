@@ -23,12 +23,12 @@ var label_size,
 	label_seed,
 	label_source,
 	label_source2;
-	
+
 var div_inputs;
 
 var input_seed;
 
-var	size,
+var size,
 	maxLevel,
 	rot,
 	lenRan,
@@ -43,27 +43,26 @@ var hide = false,
 	randSeed = 80,
 	paramSeed = Math.floor(Math.random() * 1000),
 	randBias = 0;
-	
+
 var mouseX_,
 	mouseY_,
 	rotateX_ = 0,
 	rotateY_ = 0,
 	zoom = 2,
 	doRotate = true;
-	
-function setup()
-{	
+
+function setup() {
 	createCanvas(window.innerWidth, window.innerHeight, WEBGL);
-	
+
 	var fov = 60 / 180 * PI;
 	var cameraZ = (height / 2) / tan(fov / 2);
 	perspective(60 / 180 * PI, width / height, cameraZ * 0.001, cameraZ * 100);
-	
-	rotateX_ = PI/8;
-	
+
+	rotateX_ = PI / 8;
+
 	slider_size = createSlider(0, 1, 0.5, 0.01);
 	slider_size.position(10, 10);
-	slider_level = createSlider(1, 12, 9, 1);
+	slider_level = createSlider(1, 12, 8, 1);
 	slider_level.position(10, 30);
 	slider_rot = createSlider(0, 1, 0.125, 1 / (3 * 5 * 8));
 	slider_rot.position(10, 50);
@@ -75,16 +74,16 @@ function setup()
 	slider_rotRand.position(10, 110);
 	slider_flowerProb = createSlider(0, 1, 0.5, 0.01);
 	slider_flowerProb.position(10, 130);
-	
-	slider_size.input(function(){readInputs(true)});
-	slider_level.input(function(){readInputs(true)});
-	slider_rot.input(function(){readInputs(true)});
-	slider_lenRand.input(function(){readInputs(true)});
-	slider_branchProb.input(function(){readInputs(true)});
-	slider_rotRand.input(function(){readInputs(true)});
-	slider_flowerProb.input(function(){readInputs(true)});
 
-	
+	slider_size.input(function () { readInputs(true) });
+	slider_level.input(function () { readInputs(true) });
+	slider_rot.input(function () { readInputs(true) });
+	slider_lenRand.input(function () { readInputs(true) });
+	slider_branchProb.input(function () { readInputs(true) });
+	slider_rotRand.input(function () { readInputs(true) });
+	slider_flowerProb.input(function () { readInputs(true) });
+
+
 	label_size = createSpan('Size');
 	label_size.position(150, 10);
 	label_level = createSpan('Recursion level');
@@ -99,165 +98,156 @@ function setup()
 	label_rotRand.position(150, 110);
 	label_flowerProb = createSpan('Flower probability');
 	label_flowerProb.position(150, 130);
-	
+
 	label_seed = createSpan('Seed:');
 	label_seed.position(10, 162);
-	
+
 	input_seed = createInput(randSeed);
 	input_seed.position(50, 160);
 	input_seed.style('width', '50px')
-	
+
 	button_seed = createButton('Watch it grow!');
 	button_seed.position(110, 160);
-	button_seed.mousePressed(function() {
+	button_seed.mousePressed(function () {
 		randSeed = input_seed.value();
 		startGrow();
 	});
-	
+
 	button_newSeed = createButton('Generate new tree');
 	button_newSeed.position(10, 190);
-	button_newSeed.mousePressed(function(){
+	button_newSeed.mousePressed(function () {
 		randSeed = Math.floor(Math.random() * 1000);
 		prog = 100;
 		input_seed.value(randSeed);
 		startGrow();
 	});
-	
+
 	button_randomParams = createButton('Randomise parameters');
 	button_randomParams.position(10, 220);
-	button_randomParams.mousePressed(function(){
+	button_randomParams.mousePressed(function () {
 		randomSeed(paramSeed);
-		
+
 		slider_level.value(1 * slider_level.value() + rand2() * slider_level.attribute('step'));
 		slider_rot.value(1 * slider_rot.value() + 5 * rand2() * slider_rot.attribute('step'));
 		slider_lenRand.value(1 * slider_lenRand.value() + 5 * rand2() * slider_lenRand.attribute('step'));
 		slider_branchProb.value(1 * slider_branchProb.value() + 5 * rand2() * slider_branchProb.attribute('step'));
 		slider_rotRand.value(1 * slider_rotRand.value() + 5 * rand2() * slider_rotRand.attribute('step'));
 		slider_flowerProb.value(1 * slider_flowerProb.value() + 5 * rand2() * slider_flowerProb.attribute('step'));
-		
+
 		paramSeed = 1000 * random();
 		randomSeed(randSeed);
-		
+
 		readInputs(true);
 	});
-	
+
 	button_change = createButton('Enable wind');
 	button_change.position(10, 250);
-	button_change.mousePressed(function(){
-		if ( !mutating )
-		{
+	button_change.mousePressed(function () {
+		if (!mutating) {
 			button_change.html('Disable wind')
 			mutateTime = millis();
 			mutating = true;
 			mutate();
 		}
-		else
-		{
+		else {
 			button_change.html('Enable wind')
 			randBias = 0;
 			mutating = false;
 		}
 	});
-	
+
 	button_rotation = createButton('Disable rotation');
 	button_rotation.position(10, 280);
-	button_rotation.mousePressed(function(){
-		if ( doRotate )
+	button_rotation.mousePressed(function () {
+		if (doRotate)
 			button_rotation.html('Enable rotation')
 		else
 			button_rotation.html('Disable rotation')
-		
+
 		doRotate = !doRotate;
 	});
-	
+
 	button_hide = createButton('Hide UI (click this area to show again)');
 	button_hide.position(10, 310);
 	button_hide.mousePressed(hideUI);
-	
+
 	label_perf = createSpan('Generated in #ms');
 	label_perf.position(10, 340);
 	//label_perf.style('display', 'none');
-	
+
 	label_source = createA('https://github.com/someuser-321/TreeGenerator', 'Check it out on GitHub!');
 	label_source.position(10, 360);
 	label_source2 = createA('https://someuser-321.github.io/TreeGenerator/index.html', 'Original 2D Version');
 	label_source2.position(10, 380);
-	
+
 	div_inputs = createDiv('');
-	
+
 	mouseX_ = mouseX;
 	mouseY_ = mouseY;
-	
+
 	button_change.html('Disable wind')
 	mutateTime = millis();
 	mutating = true;
 	mutate();
-	
+
 	readInputs(false);
 	startGrow();
 }
 
-function mouseDragged()
-{
-	if ( mouseX < 330 && mouseY < 400 )
+function mouseDragged() {
+	if (mouseX < 330 && mouseY < 400)
 		return true;
-	
+
 	rotateX_ += (mouseY - mouseY_) / 500;
 	rotateY_ += (mouseX - mouseX_) / 500;
-	
+
 	mouseX_ = mouseX;
 	mouseY_ = mouseY;
-	
+
 	loop();
-	
+
 	return false;
 }
 
-function mouseMoved()
-{
+function mouseMoved() {
 	mouseX_ = mouseX;
 	mouseY_ = mouseY;
-	
-	if ( mouseX > 330 || mouseY > 400 )
+
+	if (mouseX > 330 || mouseY > 400)
 		return false;
 }
 
-function mouseClicked()
-{
-	if ( mouseX > 330 || mouseY > 400 )
+function mouseClicked() {
+	if (mouseX > 330 || mouseY > 400)
 		return false;
 }
 
-function mouseWheel(event)
-{
+function mouseWheel(event) {
 	zoom *= (event.delta > 0 ? 1.1 : 1 / 1.1);
 	loop();
-	
+
 	return false;
 }
 
-function mouseReleased()
-{
-	if ( mouseX > 330 || mouseY > 400 )
+function mouseReleased() {
+	if (mouseX > 330 || mouseY > 400)
 		return false;
-	
-	if ( hide )
+
+	if (hide)
 		showUI();
 	hide = !hide;
-	
+
 }
 
-function touchEnded()
-{
-	if ( hide )
+function touchEnded() {
+	if (hide)
 		showUI();
 	hide = !hide;
-	
+
 	return false;
 }
 
-function showUI()
-{
+function showUI() {
 	slider_size.style('visibility', 'initial');
 	slider_level.style('visibility', 'initial');
 	slider_rot.style('visibility', 'initial');
@@ -286,12 +276,11 @@ function showUI()
 	label_source2.style('visibility', 'initial');
 
 	input_seed.style('visibility', 'initial');
-	
+
 	div_inputs.style('visibility', 'initial');
 }
 
-function hideUI()
-{
+function hideUI() {
 	slider_size.style('visibility', 'hidden');
 	slider_level.style('visibility', 'hidden');
 	slider_rot.style('visibility', 'hidden');
@@ -320,12 +309,11 @@ function hideUI()
 	label_source2.style('visibility', 'hidden');
 
 	input_seed.style('visibility', 'hidden');
-	
+
 	div_inputs.style('visibility', 'hidden');
 }
 
-function readInputs(updateTree)
-{
+function readInputs(updateTree) {
 	size = slider_size.value();
 	maxLevel = slider_level.value();
 	rot = slider_rot.value();
@@ -333,54 +321,50 @@ function readInputs(updateTree)
 	branchProb = slider_branchProb.value();
 	rotRand = slider_rotRand.value();
 	flowerProb = slider_flowerProb.value();
-	
-	if ( updateTree && !growing )
-	{
+
+	if (updateTree && !growing) {
 		prog = maxLevel + 1;
 		loop();
 	}
 }
 
-function mutate()
-{
+function mutate() {
 	var startTime = millis();
 	randomSeed(paramSeed);
-	
+
 	var n = noise(startTime / 20000) - 0.5;
-	
+
 	randBias = 4 * Math.abs(n) * n * (mutating ? 1 : 0);
-	
+
 	paramSeed = 1000 * random();
 	randomSeed(randSeed);
 	readInputs(true);
-	
+
 	var diff = millis() - startTime;
-	
-	if ( diff < 20 )
+
+	if (diff < 20)
 		setTimeout(mutate, 20 - diff);
 	else
 		setTimeout(mutate, 1);
 }
 
-function windowResized()
-{
+function windowResized() {
 	resizeCanvas(windowWidth, windowHeight);
-	
+
 	var fov = 60 / 180 * PI;
 	var cameraZ = (height / 2) / tan(fov / 2);
 	perspective(60 / 180 * PI, width / height, cameraZ * 0.1, cameraZ * 10);
-	
+
 	loop();
 }
 
-function draw()
-{
+function draw() {
 	var startFrameTime = millis();
-	background(0, 0, 0);	
-	
-	
+	background(0, 0, 0);
+
+
 	scale(1, -1);
-	
+
 	/*
 	ambientMaterial(255, 0, 0);
 	push();
@@ -400,23 +384,23 @@ function draw()
 	box(10, 10, 200);
 	pop();
 	*/
-	
-	translate(0, -height * (size+0.25), -zoom * height * size);
-	
-	
+
+	translate(0, -height * (size + 0.25), -zoom * height * size);
+
+
 	rotate(-rotateX_, [1, 0, 0]);
 	rotate(rotateY_, [0, 1, 0]);
-	
+
 	push();
-	rotate(-PI/2, [1, 0, 0]);
-	ambientMaterial(255, 255, 255);
+	rotate(-PI / 2, [1, 0, 0]);
+	ambientMaterial(100, 200, 100);
 	plane(1000, -1000);
 	pop();
-	
+
 	ambientLight(20);
-	pointLight(255, 255, 255, 1000, 1000, 1000);
-	
-	
+	pointLight(200, 200, 100, 1000, 1000, 1000);
+
+
 	/*
 	ambientMaterial(255, 0, 0);
 	push();
@@ -436,103 +420,107 @@ function draw()
 	box(5, 5, 200);
 	pop();
 	*/
-	
+
 	branch(1, randSeed);
-	
+
 	var frameTime = (millis() - startFrameTime);
 	label_perf.html('Generated in ' + Math.floor(frameTime * 10) / 10 + 'ms');
-	
-	var frameTime_ = Math.max(frameTime/1000, 1/(frameRate()||60));
-	
-	if ( doRotate )
-		rotateY_ += 1/180 * 2*PI * frameTime_;
-	
+
+	var frameTime_ = Math.max(frameTime / 1000, 1 / (frameRate() || 60));
+
+	if (doRotate)
+		rotateY_ += 1 / 180 * 2 * PI * frameTime_;
+
 	noLoop();
 }
 
-function branch(level, seed)
-{
-	if ( prog < level )
+function branch(level, seed) {
+	if (prog < level)
 		return;
-	
+
 	randomSeed(seed);
-	
-	var seed1 = random(1000),
-		seed2 = random(1000);
-		
+
+	var seed1 = random(1000);
+	var seed2 = random(1000);
+
 	var growthLevel = (prog - level > 1) || (prog >= maxLevel + 1) ? 1 : (prog - level);
-	
+
 	var width = 50 * size * Math.pow((maxLevel - level + 1) / maxLevel, 2);
 	var len = growthLevel * size * height * (1 + rand2() * lenRand);
 	
-	translate(0, (len / level) / 2, 0);
-	
-	ambientMaterial(255, 255, 255);
-	box(width, len / level, width);
-	
-	translate(0, (len / level) / 2, 0);
-	
+	var red = (len / level) * 0.97;
+	var green = (len / level) * 0.90;
+	var blue = (len / level) * 0.69;
+
+	if (level > 7) {
+		red = 60;
+		green = 200;
+		blue = 60;
+		len = 100;
+	}
+
 	var doBranch1 = rand() < branchProb;
 	var doBranch2 = rand() < branchProb;
-	
 	var doFlowers = rand() < flowerProb && prog >= maxLevel && level >= maxLevel;
-	
-	if ( level < maxLevel )
-	{
+
+	translate(0, (len / level) / 2, 0);
+
+	ambientMaterial(red, green, blue);
+	// box(width, len / level, width);
+	cylinder(width, len / level, 5, 5);
+
+	translate(0, (len / level) / 2, 0);
+
+	if (level < maxLevel) {
 		var r11 = rot * PI * (1 + rand2() * rotRand + randWind());
 		var r12 = rot * PI * (1 + rand2() * rotRand + randWind());
 		var r21 = rot * PI * (1 + rand2() * rotRand - randWind());
 		var r22 = rot * PI * (1 + rand2() * rotRand - randWind());
-		
-		if ( doBranch1 )
-		{
+
+		if (doBranch1) {
 			push();
-			rotate(PI/2 + r11, [0, 1, 0]);
+			rotate(PI / 2 + r11, [0, 1, 0]);
 			rotate(r12, [1, 0, 0]);
 			branch(level + 1, seed1);
 			pop();
 		}
-		if ( doBranch2 )
-		{
+		if (doBranch2) {
 			push();
-			rotate(PI/2 + r21, [0, 1, 0]);
+			rotate(PI / 2 + r21, [0, 1, 0]);
 			rotate(-r22, [1, 0, 0]);
 			branch(level + 1, seed2);
 			pop();
 		}
 	}
-	
-	if ( doFlowers )
-	{
-		ambientMaterial(255, 150, 150);
+
+	if (doFlowers) {
+		ambientMaterial(255, 140, 150);
 		var flowerSize = rand() * growthLevel * size * 50;
-		for ( var i=0 ; i<4 ; i++ )
-		{
-			rotate(PI/4, [1, 0, 0]);
-			rotate(2 * PI * i/4, [0, 0, 1])
-			
-			box(2, flowerSize, 2);
+		for (var i = 0; i < 4; i++) {
+			rotate(PI / 4, [1, 0, 0]);
+			rotate(2 * PI * i / 4, [0, 0, 1])
+
+			// box(2, flowerSize, 2);
+			// box(width, len / level, width);
+			sphere(2, 5,5)
 		}
 	}
 }
 
-function startGrow()
-{
+function startGrow() {
 	growing = true;
 	prog = 1;
 	grow();
 }
 
-function grow()
-{
-	if ( prog > (maxLevel + 3) )
-	{
+function grow() {
+	if (prog > (maxLevel + 3)) {
 		prog = maxLevel + 3;
 		loop();
 		growing = false;
 		return;
 	}
-	
+
 	var startTime = millis();
 	loop();
 	var diff = millis() - startTime;
@@ -542,17 +530,14 @@ function grow()
 }
 
 
-function rand()
-{
+function rand() {
 	return random(1000) / 1000;
 }
 
-function rand2()
-{
+function rand2() {
 	return random(2000) / 1000 - 1;
 }
 
-function randWind()
-{
+function randWind() {
 	return /*rand2() **/ randBias;
 }
